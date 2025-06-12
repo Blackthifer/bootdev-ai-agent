@@ -11,7 +11,8 @@ def main():
     load_dotenv()
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=gemini_api_key)
-    response = client.models.generate_content(model="gemini-2.0-flash-001", contents=arguments[0])
+    messages = [ genai.types.Content( role="user", parts=[ genai.types.Part( text=arguments[0] ) ] ) ]
+    response = client.models.generate_content(model="gemini-2.0-flash-001", contents=messages)
     print(f"{response.text}\nPrompt tokens: {response.usage_metadata.prompt_token_count}\nResponse tokens: {response.usage_metadata.candidates_token_count}")
 
 main()
