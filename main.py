@@ -13,6 +13,9 @@ def main():
     client = genai.Client(api_key=gemini_api_key)
     messages = [ genai.types.Content( role="user", parts=[ genai.types.Part( text=arguments[0] ) ] ) ]
     response = client.models.generate_content(model="gemini-2.0-flash-001", contents=messages)
-    print(f"{response.text}\nPrompt tokens: {response.usage_metadata.prompt_token_count}\nResponse tokens: {response.usage_metadata.candidates_token_count}")
+    output = ""
+    if len(arguments) > 1 and arguments[1] == "--verbose":
+        output = f"User prompt: {arguments[0]}\nPrompt tokens: {response.usage_metadata.prompt_token_count}\nResponse tokens: {response.usage_metadata.candidates_token_count}\n"
+    print(output + f"\n{response.text}\n")
 
 main()
