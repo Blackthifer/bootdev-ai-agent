@@ -2,8 +2,8 @@ import os
 import subprocess
 
 def run_python_file(working_directory, file_path):
-    f_path = os.path.realpath(os.path.join(os.path.abspath(working_directory), file_path))
     wd_path = os.path.abspath(working_directory)
+    f_path = os.path.realpath(os.path.join(wd_path, file_path))
     if not f_path.endswith(".py"):
         return f'Error: "{file_path}" is not a Python file.'
     if not os.path.isfile(f_path) or not os.path.exists(f_path):

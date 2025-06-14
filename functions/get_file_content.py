@@ -1,8 +1,8 @@
 import os
 
 def get_file_content(working_directory, file_path):
-    f_path = os.path.realpath(os.path.join(os.path.abspath(working_directory), file_path))
     wd_path = os.path.abspath(working_directory)
+    f_path = os.path.realpath(os.path.join(wd_path, file_path))
     if not os.path.isfile(f_path) or not os.path.exists(f_path):
         return f'Error: File not found or is not a regular file: "{file_path}"'
     if wd_path not in f_path:
