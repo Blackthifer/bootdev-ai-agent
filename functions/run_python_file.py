@@ -9,7 +9,7 @@ def run_python_file(working_directory, file_path):
     if not os.path.isfile(f_path) or not os.path.exists(f_path):
         return f'Error: File "{file_path}" not found.'
     if wd_path not in f_path:
-        return f'Error: Cannot read "{file_path}" as it is outside the permitted working directory'
+        return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
     try:
         exec_path = os.path.join(working_directory, file_path)
         result = subprocess.run("python " + exec_path, timeout=30, capture_output=True, text=True, shell=True)
