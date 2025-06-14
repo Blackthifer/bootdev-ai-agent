@@ -3,11 +3,15 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from functions.get_files_info import get_files_info
+from functions.get_file_content import get_file_content
+from functions.write_file import write_file
+from functions.run_python_file import run_python_file
 
 def main():
     arguments = sys.argv[1:]
     if len(arguments) < 1:
-        print("No prompt given!\nusage: python main.py [prompt] <options>\n")
+        print("No prompt given!\nusage: python main.py [prompt] <options>")
         os._exit(1)
     if arguments[0] == "--help":
         print("usage: python main.py [prompt] <options>\nOptions:\n--verbose provides extra output")
@@ -16,34 +20,56 @@ def main():
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=gemini_api_key)
     config = generate_config(generate_function_schemas())
-    print(ask_gemini(client, config, arguments))
+    ask_gemini(client, config, arguments)
 
 def ask_gemini(client, config, arguments):
     messages = [ types.Content( role="user", parts=[ types.Part( text=arguments[0] ) ] ) ]
     response = client.models.generate_content(model="gemini-2.0-flash-001", contents=messages, config=config)
     output = ""
-    if "--verbose" in arguments:
-        output += f"User prompt: {arguments[0]}\n"
-    output += compose_output(response, "--verbose" in arguments)
-    return output
+    call_results = []
+    verbose = "--verbose" in arguments
+    if response.function_calls is not None:
+        for call in response.function_calls:
+            call_result = call_function(call, verbose)
+            if not (call_result.parts is not None and len(call_result.parts) > 0 and
+                 call_result.parts[0].function_response is not None and
+                 call_result.parts[0].function_response.response is not None):
+                raise Exception("ERROR: INCORRECT FUNCTION CALL RETURN FORMAT")
+            if verbose:
+                print(f"-> {call_result.parts[0].function_response.response}")
+            call_results += [call_result]
+    output += compose_output(arguments[0], response, verbose)
+    print(output)
 
-def compose_output(response, verbose = False):
+def compose_output(prompt, response, verbose = False):
     output = ""
     if verbose:
+        output += f"User prompt: {prompt}\n"
         output += f"Prompt tokens: {response.usage_metadata.prompt_token_count}\n"
         output += f"Response tokens: {response.usage_metadata.candidates_token_count}\n\n"
     if response.text is not None:
         output += f"{response.text}\n"
-    if response.function_calls is not None:
-        for call in response.function_calls:
-            output += call_function(call, verbose)
     return output
 
 def call_function(function_call, verbose = False):
     output = f"Calling function: {function_call.name}"
     if verbose:
         output += f"({function_call.args})"
-    return output + "\n"
+    print(output)
+    call_response = None
+    function_dict = {"get_files_info": get_files_info, "get_file_content": get_file_content, "write_file": write_file, "run_python_file": run_python_file}
+    if function_call.name in function_dict:
+        function_call.args["working_directory"] = "./calculator"
+        call_response = {"result": function_dict[function_call.name](**function_call.args)}
+    else:
+        call_response = {"error": f"Unknown function: {function_call.name}"}
+    call_content = types.Content(role = "tool",
+                                 parts = [types.Part.from_function_response(
+                                   name = function_call.name,
+                                   response = call_response
+                                 )]
+                                 )
+    return call_content
 
 def generate_config(functions):
     system_prompt = """
