@@ -2,7 +2,7 @@ import os
 
 def get_files_info(working_directory, directory=None):
     if directory is None:
-        return f'Error: "{directory}" is not a directory'
+        directory = "."
     wd_path = os.path.abspath(working_directory)
     d_path = os.path.realpath(os.path.join(wd_path, directory))
     if not os.path.isdir(d_path) or not os.path.exists(d_path):
