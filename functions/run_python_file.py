@@ -11,12 +11,13 @@ def run_python_file(working_directory, file_path):
     if wd_path not in f_path:
         return f'Error: Cannot read "{file_path}" as it is outside the permitted working directory'
     try:
-        result = subprocess.run("python " + f_path, timeout=30, capture_output=True, text=True)
+        exec_path = os.path.join(working_directory, file_path)
+        result = subprocess.run("python " + exec_path, timeout=30, capture_output=True, text=True, shell=True)
         output = ""
         if not result.stdout == "":
-            output += f"STDOUT: {result.stdout}\n"
+            output += f"STDOUT: {result.stdout}"
         if not result.stderr == "":
-            output += f"STDERR: {result.stderr}\n"
+            output += f"STDERR: {result.stderr}"
         if result.returncode != 0:
             output += f"Process exited with code {result.returncode}"
         if output == "":
