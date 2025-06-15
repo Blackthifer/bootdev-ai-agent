@@ -23,11 +23,25 @@ def main():
     ask_gemini(client, config, arguments)
 
 def ask_gemini(client, config, arguments):
-    messages = [ types.Content( role="user", parts=[ types.Part( text=arguments[0] ) ] ) ]
-    response = client.models.generate_content(model="gemini-2.0-flash-001", contents=messages, config=config)
-    output = ""
-    call_results = []
     verbose = "--verbose" in arguments
+    messages = [ types.Content( role="user", parts=[ types.Part( text=arguments[0] ) ] ) ]
+    response = None
+    MAX_ITERATIONS = 20
+    for _ in range(MAX_ITERATIONS):
+        response = client.models.generate_content(model="gemini-2.0-flash-001", contents=messages, config=config)
+        new_messages, iterate_again = handle_response(response, verbose)
+        messages += new_messages
+        if not iterate_again:
+            break
+    output = ""
+    output += compose_output(arguments[0], response, verbose)
+    print(output)
+
+def handle_response(response, verbose):
+    new_messages = []
+    for candidate in response.candidates:
+        new_messages += [candidate.content]
+    function_called = False
     if response.function_calls is not None:
         for call in response.function_calls:
             call_result = call_function(call, verbose)
@@ -37,9 +51,9 @@ def ask_gemini(client, config, arguments):
                 raise Exception("ERROR: INCORRECT FUNCTION CALL RETURN FORMAT")
             if verbose:
                 print(f"-> {call_result.parts[0].function_response.response}")
-            call_results += [call_result]
-    output += compose_output(arguments[0], response, verbose)
-    print(output)
+            function_called = True
+            new_messages += [call_result]
+    return new_messages, function_called
 
 def compose_output(prompt, response, verbose = False):
     output = ""
@@ -48,7 +62,7 @@ def compose_output(prompt, response, verbose = False):
         output += f"Prompt tokens: {response.usage_metadata.prompt_token_count}\n"
         output += f"Response tokens: {response.usage_metadata.candidates_token_count}\n\n"
     if response.text is not None:
-        output += f"{response.text}\n"
+        output += f"Final response:\n{response.text}"
     return output
 
 def call_function(function_call, verbose = False):
@@ -73,7 +87,7 @@ def call_function(function_call, verbose = False):
 
 def generate_config(functions):
     system_prompt = """
-You are a helpful AI coding agent.
+You are a helpful AI coding agent. You always provide a clear step-by-step explanation of what you've done and how things work.
 
 When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
 
