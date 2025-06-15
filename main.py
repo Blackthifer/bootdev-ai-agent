@@ -19,7 +19,7 @@ def main():
     load_dotenv()
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=gemini_api_key)
-    config = generate_config(generate_function_schemas())
+    config = generate_config()
     ask_gemini(client, config, arguments)
 
 def ask_gemini(client, config, arguments):
@@ -85,7 +85,7 @@ def call_function(function_call, verbose = False):
                                  )
     return call_content
 
-def generate_config(functions):
+def generate_config():
     system_prompt = """
 You are a helpful AI coding agent. You always provide a clear step-by-step explanation of what you've done and how things work.
 
@@ -98,7 +98,7 @@ When a user asks a question or makes a request, make a function call plan. Expec
 
 All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
 """
-    return types.GenerateContentConfig(system_instruction=system_prompt, tools=[functions])
+    return types.GenerateContentConfig(system_instruction=system_prompt, tools=[generate_function_schemas()])
 
 def generate_function_schemas():
     return types.Tool(function_declarations=[types.FunctionDeclaration(
