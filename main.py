@@ -89,7 +89,7 @@ def generate_config(functions):
     system_prompt = """
 You are a helpful AI coding agent. You always provide a clear step-by-step explanation of what you've done and how things work.
 
-When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
+When a user asks a question or makes a request, make a function call plan. Expect any files asked about to be in the working directory. You can perform the following operations:
 
 - List files and directories
 - Read files
